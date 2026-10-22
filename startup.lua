@@ -178,7 +178,7 @@ local function loadModules()
   local moduleInfo = {}
 
   table.insert(moduleInfo, { require 'modules.astralnet' })
-  table.insert(moduleInfo, { require 'modules.shipmanager' })
+  table.insert(moduleInfo, { require 'modules.ui' })
 
   local awaitingInit = {}
 
