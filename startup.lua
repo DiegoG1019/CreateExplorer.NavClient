@@ -4,6 +4,12 @@ local function dumpError(msg)
   dump.close()
 end
 
+local sharedEnvironment = {
+  System = {
+    UpdateChecks = 0
+  }
+}
+
 do
 
   local hasFailed = settings.get("starstream.failed")
@@ -25,9 +31,20 @@ do
 
 end
 
+settings.define("astralrunner.repoUser", {
+  description = "The user who owns the repository to search",
+  type = "string",
+  default = "DiegoG1019"
+})
+settings.define("astralrunner.repoName", {
+  description = "The name of the repository to search",
+  type = "string",
+  default = nil
+})
+
 local modules = {}
-local repoUser = "DiegoG1019"
-local repoName = "CreateExplorer.NavClient"
+local repoUser = settings.get("astralrunner.repoUser")
+local repoName = settings.get("astralrunner.repoName") or error("astralrunner.repoName is not set")
 local ghDownloadAddr = "https://raw.githubusercontent.com/"..repoUser.."/"..repoName.."/refs/heads/main/"
 local ghQueryAddr = "https://api.github.com/repos/"..repoUser.."/"..repoName.."/git/trees/main?recursive=true"
 
@@ -148,8 +165,15 @@ end
 
 local function update(silent)
 
+  sharedEnvironment.System.UpdateChecks = sharedEnvironment.System.UpdateChecks + 1
   local function update_print(str)
     if not silent then print(str) end
+  end
+
+  if (not silent) then
+    term.setBackgroundColor(colors.black)
+    term.setTextColor(colors.white)
+    term.clear()
   end
 
   update_print("Updating...")
@@ -161,7 +185,6 @@ local function update(silent)
   end
 
   update_print("No updates found")
-  os.sleep(2)
 end
 
 local function dumpError(msg)
@@ -170,20 +193,19 @@ local function dumpError(msg)
   dump.close()
 end
 
-local sharedEnvironment = {}
-
 local function loadModules()
 
   print("Loading Modules")
+
   local moduleInfo = {}
 
-  table.insert(moduleInfo, { require 'modules.astralnet' })
-  table.insert(moduleInfo, { require 'modules.ui' })
+  table.insert(moduleInfo, require 'modules.astralnet')
+  table.insert(moduleInfo, require 'modules.ui')
 
   local awaitingInit = {}
+  local updating, listening = 0, 0
 
   for i,v in ipairs(moduleInfo) do
-
     if type(v) ~= "table" then
         error("Failed to initiate module "..tostring(i))
     end
@@ -205,11 +227,13 @@ local function loadModules()
     if type(moduleFunc) == "function" then
       moduleTab = moduleTab or {}
       moduleTab.event = moduleFunc
+      listening = listening + 1
     end
 
     if type(moduleUpdateFunc) == "function" then
       moduleTab = moduleTab or {}
       moduleTab.update = moduleUpdateFunc
+      updating = updating + 1
     end
 
     if moduleTab then
@@ -222,12 +246,12 @@ local function loadModules()
 
   end
 
-  print("Registered "..#modules.." module listeners")
+  print("Registered "..#modules.." modules, "..listening.." listening, and "..updating.." updating")
 
   print("Initializing "..#awaitingInit.." modules")
 
   for i,v in ipairs(awaitingInit) do
-    local success, retval = xpcall(v, debug.traceback)
+    local success, retval = xpcall(v, debug.traceback, sharedEnvironment)
     if not success then
       dumpError(tostring(success)..":::"..tostring(retval))
       error("Failed to load a module")
@@ -238,11 +262,20 @@ local function loadModules()
   os.sleep(2)
 end
 
-update()
+settings.define("disableUpdates", {
+  ["description"] = "True if this instance should skip trying to update entirely, false otherwise",
+  ["default"] = false,
+  ["type"] = "boolean"
+})
+
+if (not settings.get("disableUpdates")) then
+  update()
+end
+
 loadModules()
 
 local updateTimerId = os.startTimer(60)
-local moduleUpdateTimerId = os.startTimer(.5)
+local refreshTimerId = os.startTimer(0.05)
 
 local lastClock = os.clock()
 local delta = 0
@@ -250,36 +283,44 @@ local delta = 0
 while true do
   local event = { os.pullEvent() }
 
-  if event[0] == "alarm" then
-    if updateTimerId == event[1] then
+  delta = os.clock() - lastClock
+  lastClock = os.clock()
+
+  if event[1] == "timer" then
+    if updateTimerId == event[2] then
+      updateTimerId = os.startTimer(60)
+      --if (not settings.get("disableUpdates")) then
         update(true)
-    elseif moduleUpdateTimerId == event[1] then
-        for i,v in ipairs(modules) do
-            if v.update then
-                local success, retval = pcall(v.update, delta)
-                if success ~= true then
-                    dumpError(tostring(retval))
-                    print(tostring(retval))
-                    break
-                end
-            end
+        refreshTimerId = os.startTimer(0.05)
+        goto continue
+      --end
+
+    elseif refreshTimerId == event[2] then
+      refreshTimerId = os.startTimer(0.05)
+
+      for i,v in ipairs(modules) do
+        if v.update then
+          local success, retval = pcall(v.update, delta)
+          if success ~= true then
+            dumpError(tostring(retval))
+            print(tostring(retval))
+            goto continue
+          end
         end
-    end
-  else
-    for i,v in ipairs(modules) do
-        if v.event then
-            local success, retval = pcall(v.event, unpack(event))
-            if success ~= true then
-                dumpError(tostring(retval))
-                print(tostring(retval))
-                break
-            end
-            if retval == true then break end
-        end
+      end
     end
   end
 
-  os.sleep(0.025) -- About twice per tick
-  delta = os.clock() - lastClock
-  lastClock = os.clock()
+  for i,v in ipairs(modules) do
+    if v.event then
+      local success, retval = pcall(v.event, unpack(event))
+        if success ~= true then
+          dumpError(tostring(retval))
+          print(tostring(retval))
+          goto continue
+        end
+        if retval == true then goto continue end
+      end
+    end
+  ::continue::
 end

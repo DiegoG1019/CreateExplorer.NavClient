@@ -3,6 +3,9 @@
         "settings",
         "fs",
         "http",
-        "rednet"
+        "rednet",
+        "parallel",
+        "colors",
+        "shell"
     ]
 }
