@@ -3,6 +3,7 @@
 local basalt, vector
 local context
 local TwoPi = math.pi * 2
+local host
 
 local maxExpectedSpeed, maxExpectedAltitude = 100, 600
 
@@ -412,18 +413,13 @@ local function SetUpView()
 end
 
 local lastUpdateCheck = -1
-local ix = 0
 local function Refresh()
-    -- debug
-
-    uiState.Ship["facingAngle"]["currentDegFromNorth"] = (uiState.Ship["facingAngle"]["currentDegFromNorth"] + 1) % 360
-
-    -- end
-
     if context.System.UpdateChecks ~= lastUpdateCheck then
         lastUpdateCheck = context.System.UpdateChecks
         basalt.getMainFrame():markDirty()
     end
+
+    uiState.Ship = context.AstralNet.Query("status", nil, host)
 
     uiState.Elements["fuel"][1]["progress"].progress = (uiState.Ship["fuel"][1]["level"] / uiState.Ship["fuel"][1]["max"]) * 100
     uiState.Elements["fuel"][2]["progress"].progress = (uiState.Ship["fuel"][2]["level"] / uiState.Ship["fuel"][2]["max"]) * 100
@@ -476,7 +472,13 @@ return {
         context = ctx
         basalt = InstallRequire("basalt", "wget run https://basalt.madefor.cc/2.5/install.lua minified")
         vector = InstallRequire("vector", "wget https://raw.githubusercontent.com/automattf/vector.lua/refs/heads/master/vector.lua")
+        settings.define("nav.ui.host", {
+            description = "The host from which to request information about the ship",
+            type = "number",
+            default = nil
+        })
 
+        host = settings.get("nav.ui.host")
         SetUpView()
     end,
 
