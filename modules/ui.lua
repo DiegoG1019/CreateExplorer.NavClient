@@ -121,7 +121,7 @@ local function SetUpView()
     local frame = basalt.getMainFrame()
     local monitor = peripheral.find("monitor")
     if monitor then
-        monitor.setTextScale(0.5)
+        monitor.setTextScale(1)
         frame = basalt.createFrame(monitor)
     end
 
@@ -454,13 +454,13 @@ local function Refresh()
     uiState.Elements["fuel"][1]["max"].text = uiState.Ship["fuel"][1]["max"]
     uiState.Elements["fuel"][2]["max"].text = uiState.Ship["fuel"][2]["max"]
 
-    uiState.Elements["gimbal"]["x"].text = tostring(uiState.Ship["gimbal"]["x"])
-    uiState.Elements["gimbal"]["z"].text = tostring(uiState.Ship["gimbal"]["z"])
+    uiState.Elements["gimbal"]["x"].text = string.format("%.2f", uiState.Ship["gimbal"]["x"])
+    uiState.Elements["gimbal"]["z"].text = string.format("%.2f", uiState.Ship["gimbal"]["z"])
     uiState.Elements["gimbal"]["corrections"].text = "px:"..tostring(uiState.Ship["gimbal"]["correctionPX"])..", pz"..tostring(uiState.Ship["gimbal"]["correctionPZ"])..", nx"..tostring(uiState.Ship["gimbal"]["correctionNX"])..", nz"..tostring(uiState.Ship["gimbal"]["correctionNZ"])
     
     uiState.Elements["altitude"]["bar"].progress = (uiState.Ship["altitude"]["current"] / maxExpectedAltitude) * 100
-    uiState.Elements["altitude"]["current"].text = tostring(uiState.Ship["altitude"]["current"]).." blocks"
-    uiState.Elements["altitude"]["pressure"].text = tostring(uiState.Ship["altitude"]["pressure"])
+    uiState.Elements["altitude"]["current"].text = string.format("%.2f blocks", uiState.Ship["altitude"]["current"])
+    uiState.Elements["altitude"]["pressure"].text = string.format("%.2f", uiState.Ship["altitude"]["pressure"])
 
     local spdx, spdz = uiState.Ship["speed"]["x"], uiState.Ship["speed"]["z"]
     local spd = math.sqrt((spdx * spdx + spdz * spdz))
@@ -473,7 +473,7 @@ local function Refresh()
     uiState.Elements["propeller"]["liftLevel"].text = uiState.Ship["propeller"]["liftLevel"]
     uiState.Elements["propeller"]["liftRpm"].text = uiState.Ship["propeller"]["liftRpm"] .. " RPM"
     uiState.Elements["propeller"]["pushLevel"].text = uiState.Ship["propeller"]["pushLevel"]
-    uiState.Elements["propeller"]["pushRpm"].text = uiState.Ship["propeller"]["pushRpm"] .. "RPM"
+    uiState.Elements["propeller"]["pushRpm"].text = uiState.Ship["propeller"]["pushRpm"] .. " RPM"
 
     uiState.Elements["facingAngle"]["currentDegFromNorth"].text = string.format("%.2f deg", uiState.Ship["facingAngle"]["currentDegFromNorth"])
 
