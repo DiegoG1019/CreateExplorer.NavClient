@@ -412,6 +412,23 @@ local function SetUpView()
     })
 end
 
+local function dump(t, lv, tabs)
+    lv = lv or 0
+    tabs = tabs or 0
+    local tabStr = ""
+    for i = 0, tabs, 1 do
+        tabStr = tabStr .. ">"
+    end
+
+    for i,v in pairs(t) do
+        if type(v) == "table" and lv > 0 then
+            dump(v, lv - 1, tabs + 1)
+        else
+            print(tabStr, i, v)
+        end
+    end
+end
+
 local lastUpdateCheck = -1
 local function Refresh()
     if context.System.UpdateChecks ~= lastUpdateCheck then
@@ -419,7 +436,8 @@ local function Refresh()
         basalt.getMainFrame():markDirty()
     end
 
-    uiState.Ship = context.AstralNet.Query("status", nil, host)
+    local _, msg, _ = context.AstralNet.Query("status", nil, host)
+    uiState.Ship = msg.body
 
     uiState.Elements["fuel"][1]["progress"].progress = (uiState.Ship["fuel"][1]["level"] / uiState.Ship["fuel"][1]["max"]) * 100
     uiState.Elements["fuel"][2]["progress"].progress = (uiState.Ship["fuel"][2]["level"] / uiState.Ship["fuel"][2]["max"]) * 100
