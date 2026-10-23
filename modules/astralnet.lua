@@ -16,7 +16,7 @@ local context
 local endpoints = {}
 local currentId = 0
 
-return { 
+return {
 
 ["Event"] = function(event, sender_id, message, protocol)
   if event == "rednet_message" and sender_id and sender_id ~= os.getComputerID() and protocol == "astralnet-query" and type(message) == "table" then
@@ -32,13 +32,13 @@ return {
         rednet.send(sender_id, { ["body"] = resp, ["code"] = code, ["tstamp"] = os.time(), ["id"] = id }, "astralnet-query-response-"..idstr)
         return true
       end
-      
+
       -- assume primitive
       rednet.send(sender_id, { ["body"] = info, ["code"] = 1, ["tstamp"] = os.time(), ["id"] = id }, "astralnet-query-response-"..idstr)
     else
       rednet.send(sender_id, { ["code"] = 0, ["tstamp"] = os.time(), ["id"] = id }, "astralnet-query-response-"..idstr)
     end
-    
+
     return true
   end
 end,
@@ -84,7 +84,7 @@ end,
     error("The provided URI was invalid, as it may not be empty")
   end
 
-  if endpoints[uri] then 
+  if endpoints[uri] then
     error("The URI '"..uri.."' is already registered")
   end
 
@@ -93,14 +93,15 @@ end
 end,
 
 ["Init"] = function(ctx)
-  
-  if #endpoints > 0 then  
+  peripheral.find("modem", rednet.open)
+
+  if #endpoints > 0 then
     context.AstralNet.Endpoints[""] = endpoints
-    
+
     settings.define("astralnet.host", { description = "The hostname of this host", default = nil, type = "string" })
     local hostname = tostring(settings.get("astralnet.host") or "")..":"..os.getComputerID()
     rednet.host("astralnet-query", hostname)
-    
-    print("Started hosting 'astralnet-query'")
+
+    print("Started hosting 'astralnet-query' as '"..hostname.."'")
   end
 end }
