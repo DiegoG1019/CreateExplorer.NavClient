@@ -119,6 +119,12 @@ local uiState = {
 
 local function SetUpView()
     local frame = basalt.getMainFrame()
+    local monitor = peripheral.find("monitor")
+    if monitor then
+        monitor.setTextScale(0.5)
+        frame = basalt.createFrame(monitor)
+    end
+
     frame.background = basalt.rgb("FF091E54")
     basalt.use("charts")
 
