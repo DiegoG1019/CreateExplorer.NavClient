@@ -117,11 +117,16 @@ local uiState = {
     }
 }
 
+settings.define("nav.ui.textScale", {
+    description = "The default text scale for the application",
+    type = "number"
+})
+
 local function SetUpView()
     local frame = basalt.getMainFrame()
     local monitor = peripheral.find("monitor")
     if monitor then
-        monitor.setTextScale(1)
+        monitor.setTextScale(settings.get("nav.ui.textScale") or 1)
         frame = basalt.createFrame(monitor)
     end
 
